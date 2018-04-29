@@ -1,0 +1,14 @@
+{% if long_name %}
+The name is long! The name is <b>{{ long_name }}</b>.
+{% else %}
+The name is short! The name is <b>{{ short_name }}</b>.
+{% endif %}
+<br>
+<br>
+<p>This is here no matter what...</p>
+<br>
+<ul>
+{% for item in word_list %}
+    <li> {{ item }} </li>
+{% endfor %}
+</ul>
