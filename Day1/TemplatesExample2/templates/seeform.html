@@ -1,0 +1,24 @@
+<html>
+<h1>{{ title }}</h1>
+
+<p>You can choose a bunch of different ice cream flavors for your sundae. Those include:</p>
+<br>
+<ul>
+{% for item in lst_stuff %}
+    <li>{{ item }}</li>
+{% endfor %}
+</ul>
+
+<br>
+<form action="{{ url_for('plants') }}" method="GET">
+    What is your name?<input type="text" name="name"><br>
+    What are your favorite ice cream flavors? Select all that apply.<br>
+    <input type="checkbox" name="chocolate" value="chocolate">Chocolate<br>
+    <input type="checkbox" name="vanilla" value="vanilla">Vanilla<br>
+    <input type="checkbox" name="superman" value="superman">Superman<br>
+    <input type="checkbox" name="pistachio" value="pistachio">Pistachio<br>
+    <input type="checkbox" name="butter pecan" value="butter pecan">Butter Pecan<br>
+    <input type="submit" value="Submit">
+</form>
+
+</html>
