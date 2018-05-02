@@ -7,12 +7,13 @@
 # TODO: relationship and association table to build
 
 import os
-from flask import Flask, render_template, session, redirect, url_for, flash
+from flask import Flask, render_template, session, redirect, url_for, flash, request
 from flask_script import Manager, Shell
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField, SelectMultipleField
 from wtforms.validators import Required
 from flask_sqlalchemy import SQLAlchemy
+import requests
 # from flask_sqlalchemy import Table, Column, Integer, ForeignKey, String, DateTime, Date, Time
 # from flask_sqlalchemy import relationship, backref
 
@@ -23,7 +24,8 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 app = Flask(__name__)
 app.debug = True
 app.config['SECRET_KEY'] = 'hardtoguessstringfromsi364thisisnotsupersecurebutitsok'
-app.config["SQLALCHEMY_DATABASE_URI"] = ""
+#app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://pandeymauli@localhost:5432/songs"
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:////Users/pandeymauli/UMSI/TechnicalWorkshop/Day2/DBExample/songs"
 app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = True
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
@@ -40,20 +42,29 @@ db = SQLAlchemy(app) # For database use
 
 # Set up association Table between artists and albums
 ##
-## 
+##
 
-class Album(db.Model):
-    pass
+# class Album(db.Model):
+#     pass
 
 
 class Artist(db.Model):
-    pass
+    __tablename__ = 'artists'
+    id = db.Column(db.Integer, primary_key = True)
+    name = db.Column(db.String(50))
+    # albums = ....
+    bio = db.Column(db.String(512))
 
 class Song(db.Model):
-    pass
+    __tablename__ = 'songs'
+    id = db.Column(db.Integer, primary_key = True)
+    name = db.Column(db.String(128))
+    genre = db.Column(db.String(50))
+    # length = db.Column()
+    artist = db.Column(db.Integer, db.ForeignKey('artists.id'))
 
-class Playlist(db.Model):
-    pass
+# class Playlist(db.Model):
+#     pass
 
 
 ##### Set up Forms #####
@@ -90,7 +101,29 @@ def internal_server_error(e):
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
-    return render_template('index.html', form=form)
+    form = SongForm()
+    num_songs = len(Song.query.all())
+    if request.method == 'POST':
+        song = form.song.data
+        genre = form.genre.data
+        artist = form.artist.data
+        album = form.album.data
+        print(song, genre, artist, album)
+
+        ## Created an artist object, and added it to the Aritst table
+        artist_obj = Artist(name = artist, bio = '')
+        db.session.add(artist_obj)
+        db.session.commit()
+
+        # Extracting the artist id so that I can use it to add the value as Forieng Key in Song table
+        artist_id = artist_obj.id
+
+        ## Created a song object, and added it to the Song table
+        song_obj = Song(name = song, genre = genre, artist = artist_id)
+        db.session.add(song_obj)
+        db.session.commit()
+        return render_template('index.html', form=form, num_songs = num_songs )
+    return render_template('index.html', form=form, num_songs = num_songs )
 
 @app.route('/all_songs')
 def see_all():

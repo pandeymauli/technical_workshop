@@ -1,0 +1,13 @@
+{% extends 'index.html' %}
+
+{% block nav %}
+    {{ super() }}
+{% endblock %}
+
+{% block content %}
+<ul>
+    {% for bk in books %}
+        <li><u>{{ bk.title }}</u></li>
+    {% endfor %}
+</ul>
+{% endblock %}
