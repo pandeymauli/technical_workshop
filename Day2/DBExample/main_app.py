@@ -22,10 +22,10 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 
 # Application configurations
 app = Flask(__name__)
-app.debug = True
+#app.debug = True
 app.config['SECRET_KEY'] = 'hardtoguessstringfromsi364thisisnotsupersecurebutitsok'
-#app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://pandeymauli@localhost:5432/songs"
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:////Users/pandeymauli/UMSI/TechnicalWorkshop/Day2/DBExample/songs"
+app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql://pandeymauli@localhost:5432/songs2"
+# app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:////Users/pandeymauli/UMSI/TechnicalWorkshop/Day2/DBExample/songs2"
 app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = True
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
@@ -41,7 +41,8 @@ db = SQLAlchemy(app) # For database use
 ##### Set up Models #####
 
 # Set up association Table between artists and albums
-##
+on_playlist = db.Table('PlaylistAssoicationTable', db.Column('song_id', db.Integer, db.ForeignKey('songs.id')), db.Column('playlist_id',db.Integer, db.ForeignKey('playlists.id')))
+
 ##
 
 # class Album(db.Model):
@@ -54,6 +55,7 @@ class Artist(db.Model):
     name = db.Column(db.String(50))
     # albums = ....
     bio = db.Column(db.String(512))
+    songs = db.relationship('Song', backref = 'artists')
 
 class Song(db.Model):
     __tablename__ = 'songs'
@@ -63,8 +65,12 @@ class Song(db.Model):
     # length = db.Column()
     artist = db.Column(db.Integer, db.ForeignKey('artists.id'))
 
-# class Playlist(db.Model):
-#     pass
+class Playlist(db.Model):
+    __tablename__ = 'playlists'
+    id = db.Column(db.Integer, primary_key = True)
+    name = db.Column(db.String(128))
+    songs = db.relationship('Song',secondary=on_playlist,backref=db.backref('playlists',lazy='dynamic'),lazy='dynamic')
+
 
 
 ##### Set up Forms #####
@@ -102,7 +108,8 @@ def internal_server_error(e):
 @app.route('/', methods=['GET', 'POST'])
 def index():
     form = SongForm()
-    num_songs = len(Song.query.all())
+    all_songs = Song.query.all() # List of all songs in the table, as song objects
+    num_songs = len(all_songs)
     if request.method == 'POST':
         song = form.song.data
         genre = form.genre.data
@@ -122,6 +129,8 @@ def index():
         song_obj = Song(name = song, genre = genre, artist = artist_id)
         db.session.add(song_obj)
         db.session.commit()
+
+        print(artist_obj.songs) # List of songs associated with this artist
         return render_template('index.html', form=form, num_songs = num_songs )
     return render_template('index.html', form=form, num_songs = num_songs )
 
@@ -132,6 +141,37 @@ def see_all():
 @app.route('/all_artists')
 def see_all_artists():
     pass
+
+@app.route('/playlist', methods = ['GET','POST'])
+def create_playlists():
+    form = PlaylistForm()
+    all_songs = Song.query.all()
+    song_names = []
+    for song in all_songs:
+        song_name = song.name
+        song_id = song.id
+        song_names.append((song_id, song_name))
+    form.songs.choices = song_names # [ ('Value','What the user sees') , ()]
+
+    if request.method == 'POST':
+        playlist_name = form.name.data
+        songs_selected = form.songs.data
+        print(songs_selected)
+        playlist_obj = Playlist.query.filter_by(name = playlist_name).first()
+        if playlist_obj:
+            print("Playlist name is taken!")
+        else:
+            playlist_obj = Playlist(name = playlist_name)
+            db.session.add(playlist_obj)
+            db.session.commit()
+        # Looping through selected songs ...
+        for id in songs_selected:
+            song_obj = Song.query.filter_by(id = id).first()
+            playlist_obj.songs.append(song_obj)
+            db.session.commit()
+
+    return render_template('playlist_form.html', form = form)
+
 
 if __name__ == '__main__':
     db.create_all()
